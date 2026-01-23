@@ -5,7 +5,7 @@ import CameraView from "@/components/camera-view";
 import FoodResult from "@/components/food-result";
 import Image from "next/image";
 import Link from "next/link";
-import { analyzeFood } from "@/app/actions";
+import { analyzeFood } from "@/lib/gemini";
 import { saveFoodRecord } from "@/lib/db";
 
 
@@ -43,12 +43,19 @@ export default function ScanPage() {
     const handleAnalyze = async () => {
         if (!capturedImage) return;
 
+        // API Key is required
+        const apiKey = localStorage.getItem("gemini_api_key");
+        if (!apiKey) {
+            setAnalysisResult({
+                error: "API 키가 필요합니다. 설정 페이지에서 Gemini API 키를 입력해주세요."
+            });
+            return;
+        }
+
         setIsAnalyzing(true);
         try {
-            // Get local API Key and Model if exists
-            const localKey = localStorage.getItem("gemini_api_key") || undefined;
-            const localModel = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
-            const result = await analyzeFood(capturedImage, localKey, localModel);
+            const selectedModel = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
+            const result = await analyzeFood(capturedImage, apiKey, selectedModel);
             setAnalysisResult(result);
         } catch (error) {
             console.error("Analysis error:", error);

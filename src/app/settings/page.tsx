@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getAvailableModels } from "@/app/actions";
+import { getAvailableModels } from "@/lib/gemini";
 
 export default function SettingsPage() {
     const [apiKey, setApiKey] = useState("");
@@ -32,11 +32,16 @@ export default function SettingsPage() {
     };
 
     const handleCheckModels = async () => {
+        if (!apiKey) {
+            setMessage("API 키를 먼저 입력해주세요.");
+            return;
+        }
+
         setLoading(true);
         setModels([]);
         setMessage("");
 
-        const result = await getAvailableModels(apiKey || undefined);
+        const result = await getAvailableModels(apiKey);
 
         if (result.error) {
             setMessage(`오류: ${result.error}`);
