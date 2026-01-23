@@ -15,22 +15,22 @@ export async function analyzeFood(
         const model = client.getGenerativeModel({ model: modelName });
 
         const prompt = `
-    Analyze this food image and provide nutritional information.
-    Return ONLY a JSON object (no markdown formatting) with the following structure:
+    이 음식 이미지를 분석하여 영양 정보를 제공해주세요.
+    반드시 JSON 형식으로만 답변하세요 (마크다운 형식 사용 금지):
     {
-      "foodName": "Name of the food",
-      "portionSize": "Estimated portion (e.g., 1 bowl, 200g)",
-      "calories": number (kcal),
+      "foodName": "음식 이름 (한국어로)",
+      "portionSize": "예상 분량 (예: 1개, 2조각, 1그릇 등 - 개수 단위 사용)",
+      "calories": 칼로리 숫자 (kcal),
       "macronutrients": {
-        "carbs": number (g),
-        "protein": number (g),
-        "fat": number (g),
-        "sugar": number (g)
+        "carbs": 탄수화물 숫자 (g),
+        "protein": 단백질 숫자 (g),
+        "fat": 지방 숫자 (g),
+        "sugar": 당 숫자 (g)
       },
-      "confidence": number (0-1),
-      "description": "Short description of the meal"
+      "confidence": 신뢰도 (0-1 사이 숫자),
+      "description": "음식에 대한 짧은 설명 (한국어로)"
     }
-    If it's not food, return { "error": "Not food detected" }.
+    음식이 아닌 경우 { "error": "음식이 감지되지 않았습니다" }를 반환하세요.
     `;
 
         const imagePart = {

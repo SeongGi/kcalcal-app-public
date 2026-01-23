@@ -38,6 +38,22 @@ export default function HistoryPage() {
         return records.reduce((sum, r) => sum + r.calories, 0);
     };
 
+    const getTotalCarbs = () => {
+        return records.reduce((sum, r) => sum + r.macronutrients.carbs, 0);
+    };
+
+    const getTotalProtein = () => {
+        return records.reduce((sum, r) => sum + r.macronutrients.protein, 0);
+    };
+
+    const getTotalFat = () => {
+        return records.reduce((sum, r) => sum + r.macronutrients.fat, 0);
+    };
+
+    const getTotalSugar = () => {
+        return records.reduce((sum, r) => sum + r.macronutrients.sugar, 0);
+    };
+
     return (
         <div className="min-h-screen bg-background pb-20">
             {/* Header */}
@@ -53,13 +69,39 @@ export default function HistoryPage() {
 
             {/* Summary Card */}
             {records.length > 0 && (
-                <div className="p-4">
-                    <div className="glass-card p-6 text-center">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">오늘의 총 칼로리</p>
-                        <p className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            {getTotalCalories()}
+                <div className="p-4 space-y-3">
+                    <div className="glass-card p-6">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 text-center">
+                            {new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} 총 섭취량
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">kcal</p>
+
+                        {/* Total Calories */}
+                        <div className="text-center mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                            <p className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                {getTotalCalories()}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">kcal</p>
+                        </div>
+
+                        {/* Macronutrients Grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-surface rounded-xl p-3 text-center">
+                                <p className="text-2xl font-bold text-primary">{getTotalCarbs()}g</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">탄수화물</p>
+                            </div>
+                            <div className="bg-surface rounded-xl p-3 text-center">
+                                <p className="text-2xl font-bold text-secondary">{getTotalProtein()}g</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">단백질</p>
+                            </div>
+                            <div className="bg-surface rounded-xl p-3 text-center">
+                                <p className="text-2xl font-bold text-accent">{getTotalFat()}g</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">지방</p>
+                            </div>
+                            <div className="bg-surface rounded-xl p-3 text-center">
+                                <p className="text-2xl font-bold text-pink-500">{getTotalSugar()}g</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">당</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
