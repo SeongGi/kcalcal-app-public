@@ -20,6 +20,7 @@ export default function SettingsPage() {
     const [message, setMessage] = useState("");
     const [goalCalories, setGoalCalories] = useState("");
     const [backupLoading, setBackupLoading] = useState(false);
+    const [updateChecking, setUpdateChecking] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isInitialMount = useRef(true);
 
@@ -121,6 +122,32 @@ export default function SettingsPage() {
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
             }
+        }
+    };
+
+    const handleCheckUpdate = async () => {
+        setUpdateChecking(true);
+        try {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    await registration.update();
+                    setMessage("업데이트를 확인했습니다. 페이지를 새로고침합니다...");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    setMessage("Service Worker가 등록되지 않았습니다.");
+                }
+            } else {
+                setMessage("이 브라우저는 Service Worker를 지원하지 않습니다.");
+            }
+        } catch (error) {
+            console.error("Update check error:", error);
+            setMessage("업데이트 확인에 실패했습니다.");
+        } finally {
+            setUpdateChecking(false);
+            setTimeout(() => setMessage(""), 3000);
         }
     };
 
@@ -244,6 +271,24 @@ export default function SettingsPage() {
                 </div>
                 <p className="text-xs text-gray-400 text-center">
                     ⚠️ 복원 시 기존 데이터에 추가됩니다
+                </p>
+            </div>
+
+            {/* App Update Section */}
+            <div className="glass-card p-6 space-y-4">
+                <h2 className="text-lg font-bold">앱 업데이트</h2>
+                <p className="text-sm text-gray-500">
+                    최신 버전으로 업데이트하려면 아래 버튼을 클릭하세요.
+                </p>
+                <button
+                    onClick={handleCheckUpdate}
+                    disabled={updateChecking}
+                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl disabled:opacity-50"
+                >
+                    {updateChecking ? "확인 중..." : "🔄 업데이트 확인"}
+                </button>
+                <p className="text-xs text-gray-400 text-center">
+                    현재 버전: v1.1 (2026-01-24)
                 </p>
             </div>
 
