@@ -59,7 +59,38 @@ export async function getAllFoodRecords(): Promise<FoodRecord[]> {
         const store = transaction.objectStore(STORE_NAME);
         const request = store.getAll();
 
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+            const records = request.result;
+            // Migrate old flat structure to new macronutrients structure
+            const migratedRecords = records.map((record: any) => {
+                // Check if record uses old flat structure
+                if (record.carbs !== undefined && !record.macronutrients) {
+                    return {
+                        ...record,
+                        macronutrients: {
+                            carbs: record.carbs || 0,
+                            protein: record.protein || 0,
+                            fat: record.fat || 0,
+                            sugar: record.sugar || 0,
+                        }
+                    };
+                }
+                // Ensure macronutrients exists with default values
+                if (!record.macronutrients) {
+                    return {
+                        ...record,
+                        macronutrients: {
+                            carbs: 0,
+                            protein: 0,
+                            fat: 0,
+                            sugar: 0,
+                        }
+                    };
+                }
+                return record;
+            });
+            resolve(migratedRecords);
+        };
         request.onerror = () => reject(request.error);
     });
 }

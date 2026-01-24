@@ -69,33 +69,59 @@ export async function searchFoodNutrition(
         const model = client.getGenerativeModel({ model: modelName });
 
         const prompt = `
-    "${foodName}" (분량: ${portionSize})의 영양 정보를 인터넷에서 검색하여 제공해주세요.
-    반드시 JSON 형식으로만 답변하세요:
+    "${foodName}" (분량: ${portionSize})의 영양 정보를 제공해주세요.
+    
+    반드시 아래 JSON 형식으로만 답변하세요. 마크다운 형식을 사용하지 마세요:
     {
       "foodName": "${foodName}",
       "portionSize": "${portionSize}",
-      "calories": 칼로리 숫자 (kcal),
+      "calories": 칼로리_숫자,
       "macronutrients": {
-        "carbs": 탄수화물 숫자 (g),
-        "protein": 단백질 숫자 (g),
-        "fat": 지방 숫자 (g),
-        "sugar": 당 숫자 (g)
+        "carbs": 탄수화물_숫자,
+        "protein": 단백질_숫자,
+        "fat": 지방_숫자,
+        "sugar": 당_숫자
       },
-      "confidence": 0.9,
-      "description": "영양 정보 출처 설명"
+      "confidence": 0.85,
+      "description": "영양 정보 출처나 설명"
     }
+    
+    모든 숫자는 정수로 제공하고, 문자열이 아닌 숫자 타입으로 작성하세요.
     `;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 
-        const jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(jsonString);
+        // Remove markdown formatting
+        let jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+        // Try to extract JSON if there's extra text
+        const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            jsonString = jsonMatch[0];
+        }
+
+        const parsed = JSON.parse(jsonString);
+
+        // Ensure all required fields exist with proper types
+        return {
+            foodName: parsed.foodName || foodName,
+            portionSize: parsed.portionSize || portionSize,
+            calories: Number(parsed.calories) || 0,
+            macronutrients: {
+                carbs: Number(parsed.macronutrients?.carbs) || 0,
+                protein: Number(parsed.macronutrients?.protein) || 0,
+                fat: Number(parsed.macronutrients?.fat) || 0,
+                sugar: Number(parsed.macronutrients?.sugar) || 0,
+            },
+            confidence: Number(parsed.confidence) || 0.8,
+            description: parsed.description || "영양 정보 검색 결과"
+        };
     } catch (error: any) {
         console.error("Nutrition Search Error:", error);
         return {
-            error: error.message || "영양 정보 검색에 실패했습니다."
+            error: `영양 정보 검색에 실패했습니다: ${error.message}`
         };
     }
 }
