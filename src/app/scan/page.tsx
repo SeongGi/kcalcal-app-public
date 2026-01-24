@@ -111,11 +111,14 @@ export default function ScanPage() {
                     <CameraView onCapture={handleCapture} />
                 ) : analysisResult ? (
                     <div className="w-full h-full bg-background overflow-y-auto flex items-center">
-                        <FoodResult
-                            result={analysisResult}
-                            onSave={handleSave}
-                            onRetake={handleRetake}
-                        />
+                        {analysisResult && (
+                            <FoodResult
+                                result={analysisResult}
+                                onSave={handleSave}
+                                onRetake={handleRetake}
+                                onCorrect={(correctedResult) => setAnalysisResult(correctedResult)}
+                            />
+                        )}
                     </div>
                 ) : (
                     <div className="relative w-full h-full bg-gray-900">

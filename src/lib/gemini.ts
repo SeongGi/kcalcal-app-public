@@ -54,6 +54,52 @@ export async function analyzeFood(
     }
 }
 
+export async function searchFoodNutrition(
+    foodName: string,
+    portionSize: string,
+    apiKey: string,
+    modelName: string = "gemini-1.5-flash"
+) {
+    if (!apiKey) {
+        return { error: "API 키를 설정해주세요." };
+    }
+
+    try {
+        const client = new GoogleGenerativeAI(apiKey);
+        const model = client.getGenerativeModel({ model: modelName });
+
+        const prompt = `
+    "${foodName}" (분량: ${portionSize})의 영양 정보를 인터넷에서 검색하여 제공해주세요.
+    반드시 JSON 형식으로만 답변하세요:
+    {
+      "foodName": "${foodName}",
+      "portionSize": "${portionSize}",
+      "calories": 칼로리 숫자 (kcal),
+      "macronutrients": {
+        "carbs": 탄수화물 숫자 (g),
+        "protein": 단백질 숫자 (g),
+        "fat": 지방 숫자 (g),
+        "sugar": 당 숫자 (g)
+      },
+      "confidence": 0.9,
+      "description": "영양 정보 출처 설명"
+    }
+    `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        const jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(jsonString);
+    } catch (error: any) {
+        console.error("Nutrition Search Error:", error);
+        return {
+            error: error.message || "영양 정보 검색에 실패했습니다."
+        };
+    }
+}
+
 export async function getAvailableModels(apiKey: string) {
     if (!apiKey) {
         return { error: "API 키를 설정해주세요." };
