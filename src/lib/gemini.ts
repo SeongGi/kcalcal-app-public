@@ -46,10 +46,11 @@ export async function analyzeFood(
 
         const jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
         return JSON.parse(jsonString);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("AI Analysis Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "이미지 분석에 실패했습니다. API 키나 모델을 확인해주세요.";
         return {
-            error: error.message || "이미지 분석에 실패했습니다. API 키나 모델을 확인해주세요."
+            error: errorMessage
         };
     }
 }
@@ -118,10 +119,11 @@ export async function searchFoodNutrition(
             confidence: Number(parsed.confidence) || 0.8,
             description: parsed.description || "영양 정보 검색 결과"
         };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Nutrition Search Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
         return {
-            error: `영양 정보 검색에 실패했습니다: ${error.message}`
+            error: `영양 정보 검색에 실패했습니다: ${errorMessage}`
         };
     }
 }
@@ -142,7 +144,7 @@ export async function getAvailableModels(apiKey: string) {
 
         const data = await response.json();
         return { models: data.models };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Model fetch error:", error);
         return { error: "모델 목록을 가져오는데 실패했습니다." };
     }

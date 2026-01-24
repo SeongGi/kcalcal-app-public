@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import imageCompression from "browser-image-compression";
 
 interface CameraViewProps {
     onCapture: (imageData: string) => void;
@@ -36,7 +37,7 @@ export default function CameraView({ onCapture }: CameraViewProps) {
             console.error("Error accessing camera:", err);
             setError("카메라에 접근할 수 없습니다. 권한을 확인해주세요.");
         }
-    }, [facingMode]);
+    }, [facingMode, stream]);
 
     useEffect(() => {
         startCamera();
@@ -45,7 +46,7 @@ export default function CameraView({ onCapture }: CameraViewProps) {
                 stream.getTracks().forEach((track) => track.stop());
             }
         };
-    }, [startCamera]);
+    }, [startCamera, stream]);
 
     const handleCapture = () => {
         if (videoRef.current && canvasRef.current) {

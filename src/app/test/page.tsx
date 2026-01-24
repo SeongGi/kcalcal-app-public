@@ -12,8 +12,9 @@ export default function TestPage() {
         try {
             const res = await getAvailableModels();
             setResult(JSON.stringify(res, null, 2));
-        } catch (error: any) {
-            setResult(`Error: ${error.message}`);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
+            setResult(`Error: ${errorMessage}`);
         }
         setLoading(false);
     };

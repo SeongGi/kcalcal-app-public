@@ -34,7 +34,9 @@ function openDB(): Promise<IDBDatabase> {
                     keyPath: "id",
                     autoIncrement: true,
                 });
+                // Add timestamp index for efficient date queries
                 objectStore.createIndex("timestamp", "timestamp", { unique: false });
+                objectStore.createIndex("foodName", "foodName", { unique: false });
             }
         };
     });

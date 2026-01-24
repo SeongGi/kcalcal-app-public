@@ -1,29 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { getAvailableModels } from "@/lib/gemini";
+import { downloadBackup, restoreBackup } from "@/lib/backup";
+
+interface GeminiModel {
+    name: string;
+    displayName: string;
+    description: string;
+    supportedGenerationMethods?: string[];
+}
 
 export default function SettingsPage() {
     const [apiKey, setApiKey] = useState("");
     const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
-    const [models, setModels] = useState<any[]>([]);
+    const [models, setModels] = useState<GeminiModel[]>([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
+    const [goalCalories, setGoalCalories] = useState("");
+    const [backupLoading, setBackupLoading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const isInitialMount = useRef(true);
 
-    useEffect(() => {
-        // Load saved settings
-        const savedKey = localStorage.getItem("gemini_api_key");
-        const savedModel = localStorage.getItem("gemini_model");
-        if (savedKey) {
-            setApiKey(savedKey);
-            // Auto-load models if key exists
-            loadModels(savedKey);
-        }
-        if (savedModel) setSelectedModel(savedModel);
-    }, []);
-
-    const loadModels = async (key?: string) => {
+    const loadModels = useCallback(async (key?: string) => {
         const keyToUse = key || apiKey;
         if (!keyToUse) {
             setMessage("API 키를 먼저 입력해주세요.");
@@ -40,14 +40,31 @@ export default function SettingsPage() {
             setModels([]);
         } else if (result.models) {
             // Filter only generative models (vision models)
-            const generativeModels = result.models.filter((m: any) =>
+            const generativeModels = result.models.filter((m: GeminiModel) =>
                 m.supportedGenerationMethods?.includes("generateContent")
             );
             setModels(generativeModels);
             setMessage(`사용 가능한 모델 ${generativeModels.length}개를 불러왔습니다.`);
         }
         setLoading(false);
-    };
+    }, [apiKey]);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            // Load saved settings
+            const savedKey = localStorage.getItem("gemini_api_key");
+            const savedModel = localStorage.getItem("gemini_model");
+            const savedGoal = localStorage.getItem("goal_calories");
+            if (savedKey) {
+                setApiKey(savedKey);
+                // Auto-load models if key exists
+                loadModels(savedKey);
+            }
+            if (savedModel) setSelectedModel(savedModel);
+            if (savedGoal) setGoalCalories(savedGoal);
+        }
+    }, [loadModels]);
 
     const handleSaveKey = () => {
         localStorage.setItem("gemini_api_key", apiKey);
@@ -59,6 +76,52 @@ export default function SettingsPage() {
         localStorage.setItem("gemini_model", selectedModel);
         setMessage("모델이 저장되었습니다.");
         setTimeout(() => setMessage(""), 3000);
+    };
+
+    const handleSaveGoal = () => {
+        const calories = parseInt(goalCalories);
+        if (isNaN(calories) || calories <= 0) {
+            setMessage("올바른 칼로리 값을 입력해주세요.");
+            return;
+        }
+        localStorage.setItem("goal_calories", calories.toString());
+        setMessage("목표 칼로리가 저장되었습니다.");
+        setTimeout(() => setMessage(""), 3000);
+    };
+
+    const handleBackup = async () => {
+        setBackupLoading(true);
+        try {
+            await downloadBackup();
+            setMessage("백업 파일이 다운로드되었습니다.");
+        } catch (error) {
+            setMessage("백업에 실패했습니다.");
+        } finally {
+            setBackupLoading(false);
+            setTimeout(() => setMessage(""), 3000);
+        }
+    };
+
+    const handleRestore = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setBackupLoading(true);
+        try {
+            const result = await restoreBackup(file);
+            setMessage(result.message);
+            if (result.success) {
+                // Reload page after 2 seconds
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        } catch (error) {
+            setMessage("복원에 실패했습니다.");
+        } finally {
+            setBackupLoading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
     };
 
     return (
@@ -128,6 +191,61 @@ export default function SettingsPage() {
                     </p>
                 </div>
             )}
+
+            {/* Goal Calories Section */}
+            <div className="glass-card p-6 space-y-4">
+                <h2 className="text-lg font-bold">목표 칼로리 설정</h2>
+                <p className="text-sm text-gray-500">
+                    하루 목표 칼로리를 설정하세요.
+                </p>
+                <input
+                    type="number"
+                    value={goalCalories}
+                    onChange={(e) => setGoalCalories(e.target.value)}
+                    placeholder="예: 2000"
+                    className="w-full p-4 rounded-xl bg-surface border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                    onClick={handleSaveGoal}
+                    className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl"
+                >
+                    저장하기
+                </button>
+            </div>
+
+            {/* Backup/Restore Section */}
+            <div className="glass-card p-6 space-y-4">
+                <h2 className="text-lg font-bold">데이터 백업 및 복원</h2>
+                <p className="text-sm text-gray-500">
+                    모든 식단 기록과 설정을 백업하거나 복원할 수 있습니다.
+                </p>
+                <button
+                    onClick={handleBackup}
+                    disabled={backupLoading}
+                    className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl disabled:opacity-50"
+                >
+                    {backupLoading ? "백업 중..." : "백업 파일 다운로드"}
+                </button>
+                <div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".json"
+                        onChange={handleRestore}
+                        className="hidden"
+                        id="restore-file"
+                    />
+                    <label
+                        htmlFor="restore-file"
+                        className="block w-full py-3 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white font-medium rounded-xl text-center cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+                    >
+                        백업 파일에서 복원
+                    </label>
+                </div>
+                <p className="text-xs text-gray-400 text-center">
+                    ⚠️ 복원 시 기존 데이터에 추가됩니다
+                </p>
+            </div>
 
             {/* Reload Models Button */}
             {apiKey && (
