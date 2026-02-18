@@ -55,7 +55,7 @@ export default function ScanPage() {
             // 서버 API 호출 (API 키 불필요)
             // Capacitor 앱에서는 절대경로 필요, 웹에서는 상대경로 사용
             const apiBase = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
-                ? 'https://kcalcal.seonggi.kr'
+                ? 'https://kcalcal-app-public.vercel.app'
                 : '';
             const response = await fetch(`${apiBase}/api/analyze-food`, {
                 method: 'POST',
