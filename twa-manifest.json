@@ -1,0 +1,34 @@
+{
+    "packageId": "kr.seonggi.kcalcal",
+    "host": "kcalcal.seonggi.kr",
+    "name": "KcalCal",
+    "launcherName": "KcalCal",
+    "display": "standalone",
+    "themeColor": "#FF6B6B",
+    "navigationColor": "#FF6B6B",
+    "navigationColorDark": "#FF6B6B",
+    "backgroundColor": "#FFFFFF",
+    "startUrl": "/",
+    "iconUrl": "https://kcalcal.seonggi.kr/icon.png",
+    "maskableIconUrl": "https://kcalcal.seonggi.kr/icon.png",
+    "appVersion": "1.0.0",
+    "appVersionCode": 1,
+    "generatorApp": "bubblewrap",
+    "webManifestUrl": "https://kcalcal.seonggi.kr/manifest.json",
+    "fallbackType": "customtabs",
+    "features": {
+        "playBilling": {
+            "enabled": false
+        },
+        "locationDelegation": {
+            "enabled": false
+        },
+        "core": {
+            "disableChromiumVersionCheck": false
+        }
+    },
+    "alphaDependencies": {
+        "enabled": false
+    },
+    "enableNotifications": true
+}

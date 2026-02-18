@@ -20,16 +20,27 @@ interface FoodAnalysisResult {
 
 interface FoodResultProps {
     result: FoodAnalysisResult;
-    onSave?: () => void;
+    imageData?: string;
+    onSave?: (timestamp: number) => void;
     onRetake?: () => void;
     onCorrect?: (correctedResult: FoodAnalysisResult) => void;
 }
 
-export default function FoodResult({ result, onSave, onRetake, onCorrect }: FoodResultProps) {
+export default function FoodResult({ result, imageData, onSave, onRetake, onCorrect }: FoodResultProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editedFoodName, setEditedFoodName] = useState(result.foodName || "");
     const [editedPortion, setEditedPortion] = useState(result.portionSize || "");
     const [isSearching, setIsSearching] = useState(false);
+    const [isSavingToGallery, setIsSavingToGallery] = useState(false);
+
+    // Date selection state
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    // Initialize with current local time in YYYY-MM-DDTHH:mm format for input type="datetime-local"
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
+    });
 
     const handleCorrect = async () => {
         if (!editedFoodName.trim()) {
@@ -65,6 +76,84 @@ export default function FoodResult({ result, onSave, onRetake, onCorrect }: Food
                 onCorrect(correctedResult);
             }
         }
+    };
+
+    const handleSaveClick = () => {
+        setShowDatePicker(true);
+    };
+
+    const confirmSave = () => {
+        if (onSave) {
+            const timestamp = new Date(selectedDate).getTime();
+            onSave(timestamp);
+            setShowDatePicker(false);
+        }
+    };
+
+    const formatDateForFilename = (timestamp: number): string => {
+        const date = new Date(timestamp);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+
+        return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+    };
+
+    const saveToGallery = async () => {
+        if (!imageData) {
+            alert("저장할 이미지가 없습니다.");
+            return;
+        }
+
+        setIsSavingToGallery(true);
+
+        try {
+            const timestamp = new Date(selectedDate).getTime();
+            const fileName = `kcalcal_${formatDateForFilename(timestamp)}.jpg`;
+
+            // Convert base64 to blob
+            const response = await fetch(imageData);
+            const blob = await response.blob();
+
+            // Check if Web Share API is available (mobile)
+            if (navigator.share && navigator.canShare) {
+                const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'KcalCal 음식 기록',
+                        text: result.foodName || '음식 사진',
+                    });
+                } else {
+                    // Fallback to download
+                    downloadImage(imageData, fileName);
+                }
+            } else {
+                // Desktop: Direct download
+                downloadImage(imageData, fileName);
+            }
+        } catch (error: any) {
+            // User cancelled or error occurred
+            if (error.name !== 'AbortError') {
+                console.error("Gallery save error:", error);
+                alert("갤러리 저장에 실패했습니다.");
+            }
+        } finally {
+            setIsSavingToGallery(false);
+        }
+    };
+
+    const downloadImage = (dataUrl: string, filename: string) => {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     if (result.error) {
@@ -128,6 +217,68 @@ export default function FoodResult({ result, onSave, onRetake, onCorrect }: Food
                 </div>
             </div>
         );
+    }
+
+    // Modal for Date Selection
+    if (showDatePicker) {
+        return (
+            <div className="w-full max-w-md mx-auto p-6 space-y-4 animate-slide-up">
+                <div className="glass-card p-6 space-y-6">
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold mb-2">언제 드셨나요?</h3>
+                        <p className="text-sm text-gray-500">기록할 날짜와 시간을 선택해주세요.</p>
+                    </div>
+
+                    <div>
+                        <input
+                            type="datetime-local"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="w-full p-4 rounded-xl bg-surface border border-gray-200 dark:border-gray-700 text-lg text-center outline-none focus:ring-2 focus:ring-primary"
+                        />
+                    </div>
+
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setShowDatePicker(false)}
+                            className="flex-1 py-4 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white font-medium hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            취소
+                        </button>
+                        <button
+                            onClick={confirmSave}
+                            className="flex-1 py-4 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
+                        >
+                            저장하기
+                        </button>
+                    </div>
+
+                    {imageData && (
+                        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                                onClick={saveToGallery}
+                                disabled={isSavingToGallery}
+                                className="w-full py-3 rounded-xl bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 font-medium hover:bg-green-200 dark:hover:bg-green-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isSavingToGallery ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-green-800 dark:border-green-200 border-t-transparent rounded-full animate-spin"></div>
+                                        처리 중...
+                                    </>
+                                ) : (
+                                    <>
+                                        📸 갤러리에도 저장
+                                    </>
+                                )}
+                            </button>
+                            <p className="text-xs text-gray-400 text-center mt-2">
+                                파일명: kcalcal_{formatDateForFilename(new Date(selectedDate).getTime())}.jpg
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -199,10 +350,10 @@ export default function FoodResult({ result, onSave, onRetake, onCorrect }: Food
                     onClick={onRetake}
                     className="flex-1 py-4 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white font-medium hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
                 >
-                    다시 찍기
+                    종료/다시 찍기
                 </button>
                 <button
-                    onClick={onSave}
+                    onClick={handleSaveClick}
                     className="flex-1 py-4 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
                 >
                     저장하기

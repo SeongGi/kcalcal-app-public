@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KcalCal</string>
+    <string name="title_activity_main">KcalCal</string>
+    <string name="package_name">kr.seonggi.kcalcal</string>
+    <string name="custom_url_scheme">kr.seonggi.kcalcal</string>
+</resources>

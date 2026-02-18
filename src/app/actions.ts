@@ -1,4 +1,4 @@
-"use server";
+// 클라이언트에서 직접 호출하는 유틸리티 함수 (서버 API로 대체됨)
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 

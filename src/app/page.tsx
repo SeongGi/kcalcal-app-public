@@ -78,7 +78,13 @@ export default function Home() {
 
           <Link href="/scan" className="w-full block">
             <button className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all active:scale-[0.98]">
-              스캔 시작하기
+              📸 스캔 시작하기
+            </button>
+          </Link>
+
+          <Link href="/scan" className="w-full block">
+            <button className="w-full py-4 bg-white dark:bg-gray-800 border-2 border-primary/20 text-primary font-bold rounded-xl text-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              🖼️ 기존 사진 불러오기
             </button>
           </Link>
 

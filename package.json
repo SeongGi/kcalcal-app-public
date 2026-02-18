@@ -5,10 +5,17 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:android": "NEXT_EXPORT=true next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cap:sync": "npm run build:android && npx cap sync android",
+    "cap:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/camera": "^8.0.1",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
     "@google/generative-ai": "^0.24.1",
     "browser-image-compression": "^2.0.2",
     "chart.js": "^4.5.1",

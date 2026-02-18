@@ -1,0 +1,13 @@
+{
+    "appId": "kr.seonggi.kcalcal",
+    "appName": "KcalCal",
+    "webDir": "out",
+    "server": {
+        "androidScheme": "https"
+    },
+    "plugins": {
+        "Camera": {
+            "presentationStyle": "fullscreen"
+        }
+    }
+}

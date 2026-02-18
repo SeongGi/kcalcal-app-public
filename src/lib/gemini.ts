@@ -1,5 +1,24 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// Helper function to robustly extract and parse JSON from AI response
+function extractJSON(text: string): any {
+    try {
+        // 1. Remove markdown code blocks
+        let cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+        // 2. Try to extract JSON object if there's extra text
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            cleaned = jsonMatch[0];
+        }
+
+        return JSON.parse(cleaned);
+    } catch (error) {
+        console.error("JSON Parsing Failed. Raw text:", text);
+        throw new Error("AI 응답을 처리하는 중 오류가 발생했습니다 (JSON 파싱 실패).");
+    }
+}
+
 export async function analyzeFood(
     imageBase64: string,
     apiKey: string,
@@ -44,8 +63,7 @@ export async function analyzeFood(
         const response = await result.response;
         const text = response.text();
 
-        const jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(jsonString);
+        return extractJSON(text);
     } catch (error: unknown) {
         console.error("AI Analysis Error:", error);
         const errorMessage = error instanceof Error ? error.message : "이미지 분석에 실패했습니다. API 키나 모델을 확인해주세요.";
@@ -94,16 +112,7 @@ export async function searchFoodNutrition(
         const response = await result.response;
         const text = response.text();
 
-        // Remove markdown formatting
-        let jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
-
-        // Try to extract JSON if there's extra text
-        const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            jsonString = jsonMatch[0];
-        }
-
-        const parsed = JSON.parse(jsonString);
+        const parsed = extractJSON(text);
 
         // Ensure all required fields exist with proper types
         return {

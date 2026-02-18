@@ -43,34 +43,63 @@ export default function ScanPage() {
     const handleAnalyze = async () => {
         if (!capturedImage) return;
 
-        // API Key is required
-        const apiKey = localStorage.getItem("gemini_api_key");
-        if (!apiKey) {
-            setAnalysisResult({
-                error: "API 키가 필요합니다. 설정 페이지에서 Gemini API 키를 입력해주세요."
-            });
-            return;
-        }
-
         setIsAnalyzing(true);
         try {
-            const selectedModel = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
-            const result = await analyzeFood(capturedImage, apiKey, selectedModel);
-            setAnalysisResult(result);
+            // 디바이스 ID 확인 또는 생성
+            let deviceId = localStorage.getItem("kcalcal_device_id");
+            if (!deviceId) {
+                deviceId = crypto.randomUUID();
+                localStorage.setItem("kcalcal_device_id", deviceId);
+            }
+
+            // 서버 API 호출 (API 키 불필요)
+            // Capacitor 앱에서는 절대경로 필요, 웹에서는 상대경로 사용
+            const apiBase = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
+                ? 'https://kcalcal.seonggi.kr'
+                : '';
+            const response = await fetch(`${apiBase}/api/analyze-food`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Device-Id': deviceId, // Rate limiting용 디바이스 ID
+                },
+                body: JSON.stringify({
+                    imageData: capturedImage,
+                    model: 'gemini-1.5-flash',
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Rate limit 또는 기타 에러 처리
+                if (response.status === 429) {
+                    setAnalysisResult({
+                        error: data.error || "일일 무료 분석 횟수를 초과했습니다.",
+                    });
+                } else {
+                    setAnalysisResult({
+                        error: data.error || "분석에 실패했습니다.",
+                    });
+                }
+                return;
+            }
+
+            setAnalysisResult(data);
         } catch (error) {
             console.error("Analysis error:", error);
-            setAnalysisResult({ error: "Failed to analyze image" });
+            setAnalysisResult({ error: "서버 연결에 실패했습니다." });
         } finally {
             setIsAnalyzing(false);
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (timestamp?: number) => {
         if (!analysisResult || analysisResult.error || !capturedImage) return;
 
         try {
             await saveFoodRecord({
-                timestamp: Date.now(),
+                timestamp: timestamp || Date.now(),
                 imageData: capturedImage,
                 foodName: analysisResult.foodName || "Unknown",
                 portionSize: analysisResult.portionSize || "N/A",
@@ -114,6 +143,7 @@ export default function ScanPage() {
                         {analysisResult && (
                             <FoodResult
                                 result={analysisResult}
+                                imageData={capturedImage}
                                 onSave={handleSave}
                                 onRetake={handleRetake}
                                 onCorrect={(correctedResult) => setAnalysisResult(correctedResult)}
