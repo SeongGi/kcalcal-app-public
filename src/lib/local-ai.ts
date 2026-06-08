@@ -1,63 +1,50 @@
-let modelPromise: any = null;
+let classifierPromise: any = null;
 
-async function getModel() {
+async function getClassifier() {
     if (typeof window === 'undefined') return null;
     
     try {
         // Dynamic import to prevent next.js SSR build errors
-        const tf = await import('@tensorflow/tfjs');
-        const mobilenet = await import('@tensorflow-models/mobilenet');
+        const { pipeline, env } = await import('@huggingface/transformers');
         
-        if (!modelPromise) {
-            modelPromise = tf.ready().then(() => {
-                console.log("TensorFlow.js ready. Loading MobileNet v1...");
-                return mobilenet.load({
-                    version: 1,
-                    alpha: 1.0
-                });
-            });
+        // Instruct transformers.js to fetch from Hugging Face Hub, not look locally
+        env.allowLocalModels = false;
+        
+        if (!classifierPromise) {
+            console.log("Loading Swin Food-101 Model from Hugging Face CDN...");
+            classifierPromise = pipeline('image-classification', 'onnx-community/swin-finetuned-food101-ONNX');
         }
-        return modelPromise;
+        return classifierPromise;
     } catch (error) {
-        console.error("Failed to initialize TensorFlow/MobileNet:", error);
+        console.error("Failed to initialize Transformers.js Swin classifier:", error);
         throw new Error("로컬 AI 엔진 초기화 실패");
     }
 }
 
 /**
- * Classify a base64 encoded image using on-device MobileNet.
- * Returns an array of predicted English class names sorted by probability.
+ * Classify a base64 encoded image using on-device Swin Food-101 model.
+ * Returns an array of predicted food class labels.
  */
 export async function classifyImageLocally(imageBase64: string): Promise<string[]> {
-    const model = await getModel();
-    if (!model) {
+    const classifier = await getClassifier();
+    if (!classifier) {
         throw new Error("로컬 AI는 브라우저 환경에서만 동작합니다.");
     }
     
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.src = imageBase64;
+    try {
+        console.log("Running on-device Swin classification...");
+        // Pass base64 image data directly to the pipeline
+        const results = await classifier(imageBase64, {
+            topk: 3 // Get top 3 predictions
+        });
+        console.log("Swin Food-101 Predictions:", results);
         
-        img.onload = async () => {
-            try {
-                // Classify the image
-                const predictions = await model.classify(img);
-                console.log("Local AI Raw Predictions:", predictions);
-                
-                if (predictions && predictions.length > 0) {
-                    resolve(predictions.map((p: any) => p.className));
-                } else {
-                    resolve([]);
-                }
-            } catch (err) {
-                console.error("Error during local image classification:", err);
-                reject(err);
-            }
-        };
-        
-        img.onerror = (err) => {
-            console.error("Error loading base64 image in local-ai:", err);
-            reject(new Error("이미지를 읽는 도중 오류가 발생했습니다."));
-        };
-    });
+        if (results && results.length > 0) {
+            return results.map((r: any) => r.label);
+        }
+        return [];
+    } catch (err) {
+        console.error("Error during local Swin classification:", err);
+        throw err;
+    }
 }
