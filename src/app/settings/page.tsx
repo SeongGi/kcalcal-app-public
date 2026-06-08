@@ -21,6 +21,9 @@ export default function SettingsPage() {
     const [goalCalories, setGoalCalories] = useState("");
     const [backupLoading, setBackupLoading] = useState(false);
     const [updateChecking, setUpdateChecking] = useState(false);
+    const [modelDownloaded, setModelDownloaded] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+    const [isDownloadingModel, setIsDownloadingModel] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isInitialMount = useRef(true);
 
@@ -64,8 +67,54 @@ export default function SettingsPage() {
             }
             if (savedModel) setSelectedModel(savedModel);
             if (savedGoal) setGoalCalories(savedGoal);
+
+            const downloaded = localStorage.getItem("local_model_downloaded") === "true";
+            setModelDownloaded(downloaded);
         }
     }, [loadModels]);
+
+    const handleDownloadModel = async () => {
+        setIsDownloadingModel(true);
+        setDownloadProgress(0);
+        setMessage("");
+        
+        try {
+            const { classifyImageLocally } = await import("@/lib/local-ai");
+            const dummyBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            
+            await classifyImageLocally(dummyBase64, (progress) => {
+                setDownloadProgress(progress);
+            });
+            
+            localStorage.setItem("local_model_downloaded", "true");
+            setModelDownloaded(true);
+            setMessage("로컬 AI 모델이 성공적으로 설치되었습니다!");
+        } catch (error: any) {
+            console.error("Model download error:", error);
+            setMessage(`모델 다운로드 중 오류 발생: ${error.message}`);
+        } finally {
+            setIsDownloadingModel(false);
+            setDownloadProgress(null);
+        }
+    };
+
+    const handleDeleteModel = async () => {
+        if (!confirm("로컬 AI 모델을 기기에서 삭제하시겠습니까? (삭제 후 스캔을 하려면 재다운로드가 필요합니다.)")) {
+            return;
+        }
+        
+        try {
+            if ('caches' in window) {
+                await caches.delete('transformers-cache');
+            }
+            localStorage.removeItem("local_model_downloaded");
+            setModelDownloaded(false);
+            setMessage("로컬 AI 모델이 기기에서 삭제되었습니다.");
+        } catch (error: any) {
+            console.error("Model delete error:", error);
+            setMessage("모델 삭제에 실패했습니다.");
+        }
+    };
 
     const handleSaveKey = () => {
         localStorage.setItem("gemini_api_key", apiKey);
@@ -192,6 +241,69 @@ export default function SettingsPage() {
                     저장하고 모델 불러오기
                 </button>
             </div>
+
+            {/* Local AI Model Management Section */}
+            <div className="glass-card p-6 space-y-4">
+                <h2 className="text-lg font-bold">온디바이스 로컬 AI 모델 관리</h2>
+                <p className="text-sm text-gray-500">
+                    음식 인식을 모바일 내에서 안전하게 수행하려면 고성능 Swin Food-101 로컬 AI 모델(약 110MB)을 먼저 다운로드해야 합니다. 설치 후에는 완전 오프라인에서 스캔이 작동합니다.
+                </p>
+                
+                <div className="flex justify-between items-center bg-surface p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <span className="text-sm font-medium">설치 상태</span>
+                    {modelDownloaded ? (
+                        <span className="text-sm font-bold text-green-500 flex items-center gap-1">
+                            ✓ 설치됨 (오프라인 사용 가능)
+                        </span>
+                    ) : (
+                        <span className="text-sm font-bold text-yellow-500 flex items-center gap-1">
+                            ⚠ 미설치
+                        </span>
+                    )}
+                </div>
+
+                {isDownloadingModel ? (
+                    <div className="space-y-2">
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 h-2.5 rounded-full overflow-hidden">
+                            <div 
+                                className="bg-primary h-full transition-all duration-300"
+                                style={{ width: `${downloadProgress || 0}%` }}
+                            ></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                            <span>모델 다운로드 중...</span>
+                            <span>{downloadProgress !== null ? `${downloadProgress}%` : '연결 중...'}</span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex gap-3">
+                        {!modelDownloaded ? (
+                            <button
+                                onClick={handleDownloadModel}
+                                className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-opacity"
+                            >
+                                📥 로컬 AI 모델 다운로드 / 설치
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={handleDownloadModel}
+                                    className="flex-1 py-3 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
+                                >
+                                    🔄 모델 재설치
+                                </button>
+                                <button
+                                    onClick={handleDeleteModel}
+                                    className="py-3 px-4 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 font-medium rounded-xl hover:opacity-90 transition-opacity"
+                                >
+                                    🗑️ 삭제
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
 
             {/* Model Selection Section */}
             {models.length > 0 && (

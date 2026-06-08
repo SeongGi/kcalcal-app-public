@@ -104,6 +104,13 @@ export const localFoodDB: Record<string, FoodNutrition> = {
         macronutrients: { carbs: 88, protein: 14, fat: 15, sugar: 3 },
         description: "야채와 햄 등을 함께 볶은 일반 볶음밥 기준."
     },
+    "새우볶음밥": {
+        foodName: "새우볶음밥",
+        portionSize: "1인분 (약 350g)",
+        calories: 530,
+        macronutrients: { carbs: 82, protein: 15, fat: 13, sugar: 2 },
+        description: "새우와 야채를 곁들인 볶음밥."
+    },
     "제육덮밥": {
         foodName: "제육덮밥",
         portionSize: "1인분 (약 450g)",
@@ -131,6 +138,34 @@ export const localFoodDB: Record<string, FoodNutrition> = {
         calories: 520,
         macronutrients: { carbs: 88, protein: 14, fat: 12, sugar: 8 },
         description: "카레 소스와 밥을 곁들인 한 그릇 기준."
+    },
+    "하이라이스": {
+        foodName: "하이라이스",
+        portionSize: "1인분 (약 400g)",
+        calories: 540,
+        macronutrients: { carbs: 90, protein: 13, fat: 13, sugar: 7 },
+        description: "하이라이스 소스에 야채와 고기를 얹어 밥과 함께 먹는 식사."
+    },
+    "짜장밥": {
+        foodName: "짜장밥",
+        portionSize: "1인분 (약 400g)",
+        calories: 495,
+        macronutrients: { carbs: 86, protein: 11, fat: 10, sugar: 8 },
+        description: "달콤하고 짭조름한 짜장 소스를 올린 밥."
+    },
+    "짜장소스": {
+        foodName: "짜장소스",
+        portionSize: "1인분 (약 150g)",
+        calories: 195,
+        macronutrients: { carbs: 21, protein: 5, fat: 9, sugar: 8 },
+        description: "한 그릇 분량의 일반 짜장 소스."
+    },
+    "잡채밥": {
+        foodName: "잡채밥",
+        portionSize: "1인분 (약 450g)",
+        calories: 680,
+        macronutrients: { carbs: 105, protein: 15, fat: 20, sugar: 10 },
+        description: "잡채와 밥을 함께 제공하며 중식 소스를 곁들인 한 그릇."
     },
 
     // === 찌개 및 국류 ===
@@ -183,6 +218,20 @@ export const localFoodDB: Record<string, FoodNutrition> = {
         macronutrients: { carbs: 2, protein: 24, fat: 12, sugar: 0 },
         description: "소고기 뼈를 우려낸 뽀얀 국물과 소고기 편육 기준 (밥 제외)."
     },
+    "육개장": {
+        foodName: "육개장",
+        portionSize: "1인분 (약 400g)",
+        calories: 250,
+        macronutrients: { carbs: 11, protein: 18, fat: 14, sugar: 2 },
+        description: "대파와 소고기를 듬뿍 넣고 매콤하게 끓여낸 국 요리."
+    },
+    "갈비탕": {
+        foodName: "갈비탕",
+        portionSize: "1인분 (약 400g)",
+        calories: 300,
+        macronutrients: { carbs: 4, protein: 28, fat: 18, sugar: 0 },
+        description: "소갈비를 푹 끓여낸 맑은 보양 국물 요리."
+    },
     "삼계탕": {
         foodName: "삼계탕",
         portionSize: "0.5마리 (약 500g)",
@@ -196,6 +245,34 @@ export const localFoodDB: Record<string, FoodNutrition> = {
         calories: 430,
         macronutrients: { carbs: 12, protein: 38, fat: 25, sugar: 3 },
         description: "돼지 등뼈와 우거지를 푹 끓여낸 해장국 기준 (밥 제외)."
+    },
+    "돼지국밥": {
+        foodName: "돼지국밥",
+        portionSize: "1인분 (약 400g)",
+        calories: 380,
+        macronutrients: { carbs: 3, protein: 35, fat: 23, sugar: 0 },
+        description: "뽀얀 돼지 사골 국물에 돼지고기 수육이 들어간 국밥 (밥 제외)."
+    },
+    "순대국": {
+        foodName: "순대국",
+        portionSize: "1인분 (약 400g)",
+        calories: 350,
+        macronutrients: { carbs: 8, protein: 28, fat: 21, sugar: 1 },
+        description: "머리고기와 순대가 듬뿍 들어간 시원한 순대국밥 국물 기준."
+    },
+    "마라탕": {
+        foodName: "마라탕",
+        portionSize: "1인분 (약 500g)",
+        calories: 500,
+        macronutrients: { carbs: 45, protein: 25, fat: 26, sugar: 3 },
+        description: "마라 향신료를 베이스로 각종 채소, 면, 고기를 넣고 끓인 얼큰한 요리."
+    },
+    "감자탕": {
+        foodName: "감자탕",
+        portionSize: "1인분 (약 500g)",
+        calories: 480,
+        macronutrients: { carbs: 18, protein: 40, fat: 28, sugar: 2 },
+        description: "돼지 등뼈와 감자, 들깨가루 등을 넣어 칼칼하게 끓여낸 전골 요리."
     },
 
     // === 구이 및 볶음 반찬 ===
@@ -247,6 +324,20 @@ export const localFoodDB: Record<string, FoodNutrition> = {
         calories: 280,
         macronutrients: { carbs: 46, protein: 5, fat: 8.5, sugar: 8 },
         description: "당면과 야채, 고기를 함께 볶아낸 한식 면 요리."
+    },
+    "족발": {
+        foodName: "족발",
+        portionSize: "1인분 (약 200g)",
+        calories: 460,
+        macronutrients: { carbs: 3, protein: 41, fat: 30, sugar: 1 },
+        description: "돼지 족을 간장과 향신료 등에 삶아 슬라이스한 고기 요리."
+    },
+    "보쌈": {
+        foodName: "보쌈",
+        portionSize: "1인분 (약 200g)",
+        calories: 410,
+        macronutrients: { carbs: 1, protein: 38, fat: 28, sugar: 0 },
+        description: "돼지고기 삼겹살이나 목살을 담백하게 삶아낸 편육."
     },
 
     // === 면류 ===
@@ -320,6 +411,20 @@ export const localFoodDB: Record<string, FoodNutrition> = {
         macronutrients: { carbs: 72, protein: 10, fat: 20, sugar: 1 },
         description: "올리브 오일과 마늘, 페페론치노로 가볍게 볶은 파스타."
     },
+    "쌀국수": {
+        foodName: "쌀국수",
+        portionSize: "1그릇 (약 500g)",
+        calories: 360,
+        macronutrients: { carbs: 70, protein: 18, fat: 3, sugar: 2 },
+        description: "진한 소고기 육수에 숙주와 소고기를 얹은 베트남식 쌀국수."
+    },
+    "팟타이": {
+        foodName: "팟타이",
+        portionSize: "1인분 (약 350g)",
+        calories: 580,
+        macronutrients: { carbs: 92, protein: 16, fat: 18, sugar: 18 },
+        description: "숙주, 두부, 새우, 달걀을 땅콩가루와 볶아낸 태국식 쌀국수 볶음."
+    },
 
     // === 양식 / 패스트푸드 / 분식 ===
     "피자": {
@@ -391,6 +496,27 @@ export const localFoodDB: Record<string, FoodNutrition> = {
         calories: 400,
         macronutrients: { carbs: 42, protein: 5, fat: 23, sugar: 2 },
         description: "오징어, 김말이, 야채 튀김 등 분식점 튀김 모듬."
+    },
+    "탕수육": {
+        foodName: "탕수육",
+        portionSize: "1인분 (소, 약 200g)",
+        calories: 450,
+        macronutrients: { carbs: 55, protein: 18, fat: 18, sugar: 12 },
+        description: "돼지고기 튀김에 달콤한 전분 소스를 곁들인 중식 요리."
+    },
+    "꿔바로우": {
+        foodName: "꿔바로우",
+        portionSize: "1인분 (약 200g)",
+        calories: 480,
+        macronutrients: { carbs: 58, protein: 16, fat: 20, sugar: 15 },
+        description: "납작하게 썬 돼지고기를 찹쌀 반죽으로 바삭하게 튀겨 소스를 부은 중식 요리."
+    },
+    "닭강정": {
+        foodName: "닭강정",
+        portionSize: "1인분 (약 200g)",
+        calories: 590,
+        macronutrients: { carbs: 50, protein: 22, fat: 33, sugar: 18 },
+        description: "한입 크기로 튀겨낸 닭고기에 달콤 매콤하게 조린 닭강정."
     },
 
     // === 과일류 ===

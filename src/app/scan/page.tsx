@@ -46,20 +46,36 @@ export default function ScanPage() {
 
     const handleAnalyze = async () => {
         if (!capturedImage) return;
+ 
+        const geminiApiKey = localStorage.getItem("gemini_api_key");
+        const geminiModel = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
+        const isModelInstalled = localStorage.getItem("local_model_downloaded") === "true";
+
+        // 로컬 모델도 설치되어 있지 않고 Gemini API 키도 없는 경우
+        if (!isModelInstalled && !geminiApiKey) {
+            setAnalysisResult({
+                error: "로컬 AI 모델이 설치되지 않았습니다. 설정(⚙️) 페이지에서 '온디바이스 로컬 AI 모델 다운로드 / 설치'를 완료하거나, Gemini API 키를 등록해주세요."
+            });
+            return;
+        }
 
         setIsAnalyzing(true);
         setAnalysisStatus("로컬 AI 엔진 구동 및 음식 식별 중...");
-        
-        const geminiApiKey = localStorage.getItem("gemini_api_key");
-        const geminiModel = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
 
         try {
+            let predictions: string[] = [];
+            
             // 1. 온디바이스 로컬 AI (Swin)로 분석 시도
-            console.log("Starting local AI classification...");
-            const predictions = await classifyImageLocally(capturedImage, (progress) => {
-                setAnalysisStatus(`로컬 AI 모델 다운로드 중... (${progress}%)`);
-            });
-            console.log("Local AI predictions:", predictions);
+            if (isModelInstalled) {
+                console.log("Starting local AI classification...");
+                predictions = await classifyImageLocally(capturedImage, (progress) => {
+                    setAnalysisStatus(`로컬 AI 모델 다운로드 중... (${progress}%)`);
+                });
+                console.log("Local AI predictions:", predictions);
+            } else {
+                console.log("Local AI model not installed. Skipping directly to Gemini.");
+                throw new Error("Local model not installed");
+            }
 
             let matchedFood = null;
             let translatedName = "";
