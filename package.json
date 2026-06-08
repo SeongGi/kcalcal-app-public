@@ -17,6 +17,8 @@
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
     "@google/generative-ai": "^0.24.1",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
     "browser-image-compression": "^2.0.2",
     "chart.js": "^4.5.1",
     "next": "16.1.4",

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { searchFoodNutrition } from "@/lib/gemini";
+import { searchLocalFood } from "@/lib/food-db";
 
 interface FoodAnalysisResult {
     foodName?: string;
@@ -50,31 +51,61 @@ export default function FoodResult({ result, imageData, onSave, onRetake, onCorr
 
         setIsSearching(true);
 
-        const apiKey = localStorage.getItem("gemini_api_key");
-        const modelName = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
-
-        if (!apiKey) {
-            alert("API 키가 필요합니다. 설정 페이지에서 입력해주세요.");
+        // 1. 로컬 데이터베이스에서 음식 검색 시도
+        const localMatch = searchLocalFood(editedFoodName);
+        if (localMatch) {
             setIsSearching(false);
+            setIsEditing(false);
+            if (onCorrect) {
+                onCorrect({
+                    foodName: localMatch.foodName,
+                    portionSize: editedPortion || localMatch.portionSize,
+                    calories: localMatch.calories,
+                    macronutrients: localMatch.macronutrients,
+                    confidence: 0.95,
+                    description: localMatch.description
+                });
+            }
             return;
         }
 
-        const correctedResult = await searchFoodNutrition(
-            editedFoodName,
-            editedPortion,
-            apiKey,
-            modelName
-        );
+        // 2. 로컬 검색 실패 시, Gemini API 키가 존재하는 경우에만 클라우드 검색 시도 (폴백)
+        const apiKey = localStorage.getItem("gemini_api_key");
+        const modelName = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
 
-        setIsSearching(false);
+        if (apiKey) {
+            const correctedResult = await searchFoodNutrition(
+                editedFoodName,
+                editedPortion,
+                apiKey,
+                modelName
+            );
 
-        if (correctedResult.error) {
-            alert(`오류: ${correctedResult.error}`);
+            setIsSearching(false);
+
+            if (correctedResult.error) {
+                alert(`오류: ${correctedResult.error}`);
+            } else {
+                setIsEditing(false);
+                if (onCorrect) {
+                    onCorrect(correctedResult);
+                }
+            }
         } else {
+            // 3. API 키가 없고 로컬 검색도 실패한 경우, 0칼로리로 임시 설정
+            setIsSearching(false);
             setIsEditing(false);
             if (onCorrect) {
-                onCorrect(correctedResult);
+                onCorrect({
+                    foodName: editedFoodName,
+                    portionSize: editedPortion || "1인분",
+                    calories: 0,
+                    macronutrients: { carbs: 0, protein: 0, fat: 0, sugar: 0 },
+                    confidence: 0.5,
+                    description: "로컬 DB에서 영양 정보를 찾지 못했습니다. 설정에서 Gemini API 키를 등록하면 자동으로 검색이 가능합니다."
+                });
             }
+            alert("로컬 DB에서 음식을 찾지 못했습니다. 칼로리와 영양소가 0으로 설정되니 저장 시 참고해주세요.");
         }
     };
 

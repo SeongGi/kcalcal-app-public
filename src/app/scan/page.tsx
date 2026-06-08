@@ -5,8 +5,11 @@ import CameraView from "@/components/camera-view";
 import FoodResult from "@/components/food-result";
 import Image from "next/image";
 import Link from "next/link";
-import { analyzeFood } from "@/lib/gemini";
+import { analyzeFood as analyzeFoodWithGemini } from "@/lib/gemini";
 import { saveFoodRecord } from "@/lib/db";
+import { classifyImageLocally } from "@/lib/local-ai";
+import { translateFoodName } from "@/lib/food-translation";
+import { searchLocalFood } from "@/lib/food-db";
 
 
 interface AnalysisResult {
@@ -28,6 +31,7 @@ interface AnalysisResult {
 export default function ScanPage() {
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisStatus, setAnalysisStatus] = useState("");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
     const handleCapture = (imageData: string) => {
@@ -44,53 +48,97 @@ export default function ScanPage() {
         if (!capturedImage) return;
 
         setIsAnalyzing(true);
+        setAnalysisStatus("로컬 AI 엔진 구동 및 음식 식별 중...");
+        
+        const geminiApiKey = localStorage.getItem("gemini_api_key");
+        const geminiModel = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
+
         try {
-            // 디바이스 ID 확인 또는 생성
-            let deviceId = localStorage.getItem("kcalcal_device_id");
-            if (!deviceId) {
-                deviceId = crypto.randomUUID();
-                localStorage.setItem("kcalcal_device_id", deviceId);
+            // 1. 온디바이스 로컬 AI (MobileNet)로 분석 시도
+            console.log("Starting local AI classification...");
+            const predictions = await classifyImageLocally(capturedImage);
+            console.log("Local AI predictions:", predictions);
+
+            let matchedFood = null;
+            let translatedName = "";
+
+            if (predictions && predictions.length > 0) {
+                // 상위 예측값들을 순서대로 검색
+                for (const pred of predictions) {
+                    translatedName = translateFoodName(pred);
+                    console.log(`Checking local DB for: ${translatedName} (translated from ${pred})`);
+                    const dbResult = searchLocalFood(translatedName);
+                    if (dbResult) {
+                        matchedFood = dbResult;
+                        break;
+                    }
+                }
             }
 
-            // 서버 API 호출 (API 키 불필요)
-            // Capacitor 앱에서는 절대경로 필요, 웹에서는 상대경로 사용
-            const apiBase = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
-                ? 'https://kcalcal-app-public.vercel.app'
-                : '';
-            const response = await fetch(`${apiBase}/api/analyze-food`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Device-Id': deviceId, // Rate limiting용 디바이스 ID
-                },
-                body: JSON.stringify({
-                    imageData: capturedImage,
-                    model: 'gemini-1.5-flash',
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Rate limit 또는 기타 에러 처리
-                if (response.status === 429) {
-                    setAnalysisResult({
-                        error: data.error || "일일 무료 분석 횟수를 초과했습니다.",
-                    });
-                } else {
-                    setAnalysisResult({
-                        error: data.error || "분석에 실패했습니다.",
-                    });
-                }
+            // 로컬 DB에서 매칭 성공 시
+            if (matchedFood) {
+                setAnalysisResult({
+                    foodName: matchedFood.foodName,
+                    portionSize: matchedFood.portionSize,
+                    calories: matchedFood.calories,
+                    macronutrients: matchedFood.macronutrients,
+                    confidence: 0.85,
+                    description: matchedFood.description
+                });
                 return;
             }
 
-            setAnalysisResult(data);
-        } catch (error) {
-            console.error("Analysis error:", error);
-            setAnalysisResult({ error: "서버 연결에 실패했습니다." });
+            // 2. 로컬 매칭 실패 시, Gemini API 키가 존재하면 Gemini Vision API 호출 (폴백)
+            if (geminiApiKey) {
+                setAnalysisStatus("로컬 매칭 실패. Gemini Cloud AI 정밀 분석 중...");
+                console.log("Local match failed. Falling back to Gemini API...");
+                
+                const geminiResult = await analyzeFoodWithGemini(capturedImage, geminiApiKey, geminiModel);
+                
+                if (geminiResult && !geminiResult.error) {
+                    setAnalysisResult(geminiResult);
+                } else {
+                    setAnalysisResult({
+                        error: geminiResult.error || "Gemini 분석에 실패했습니다."
+                    });
+                }
+            } else {
+                // 3. API 키가 없고 로컬 분석에서도 매칭되지 않은 경우
+                // 예측된 가장 높은 순위의 음식을 기본 이름으로 하여 0칼로리 수동 입력 폼 구성
+                const defaultFoodName = predictions && predictions.length > 0 
+                    ? translateFoodName(predictions[0]) 
+                    : "알 수 없는 음식";
+                
+                setAnalysisResult({
+                    foodName: defaultFoodName,
+                    portionSize: "1인분",
+                    calories: 0,
+                    macronutrients: { carbs: 0, protein: 0, fat: 0, sugar: 0 },
+                    confidence: 0.3,
+                    description: "로컬 AI가 식별하였으나 매칭되는 칼로리 정보를 찾지 못했습니다. 아래 버튼을 눌러 정확한 이름을 입력해 검색해보세요."
+                });
+            }
+        } catch (error: any) {
+            console.error("Local AI analysis failed:", error);
+            
+            // 로컬 AI 실행 도중 에러가 났을 때도 Gemini API 키가 있으면 폴백
+            if (geminiApiKey) {
+                try {
+                    setAnalysisStatus("로컬 오류 발생. Gemini Cloud AI 정밀 분석 중...");
+                    const geminiResult = await analyzeFoodWithGemini(capturedImage, geminiApiKey, geminiModel);
+                    setAnalysisResult(geminiResult);
+                } catch (geminiError: any) {
+                    console.error("Gemini fallback also failed:", geminiError);
+                    setAnalysisResult({ error: "음식 분석 및 클라우드 폴백에 실패했습니다." });
+                }
+            } else {
+                setAnalysisResult({
+                    error: "로컬 이미지 분석 중 오류가 발생했습니다. 직접 검색해 등록해주세요."
+                });
+            }
         } finally {
             setIsAnalyzing(false);
+            setAnalysisStatus("");
         }
     };
 
@@ -164,7 +212,7 @@ export default function ScanPage() {
                             {isAnalyzing ? (
                                 <div className="w-full py-8 flex flex-col items-center justify-center space-y-4 animate-pulse">
                                     <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                    <p className="text-white font-medium">음식 분석 중...</p>
+                                    <p className="text-white font-medium">{analysisStatus || "음식 분석 중..."}</p>
                                 </div>
                             ) : (
                                 <div className="flex gap-4">

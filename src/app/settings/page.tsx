@@ -164,15 +164,19 @@ export default function SettingsPage() {
 
             {/* API Key Section */}
             <div className="glass-card p-6 space-y-4">
-                <h2 className="text-lg font-bold">Gemini API 키 설정</h2>
+                <h2 className="text-lg font-bold">Gemini API 키 설정 (선택 사항)</h2>
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-sm text-primary space-y-1">
+                    <p className="font-bold">💡 기본 분석은 온디바이스 로컬 AI로 동작합니다!</p>
+                    <p className="text-xs opacity-90">API 키가 없어도 이미지 분석 및 칼로리 매칭 기능이 전량 무료로 작동합니다. 아래 API 키는 로컬 분석이 실패했을 때의 정밀 분석 폴백(Fallback)용으로만 사용됩니다.</p>
+                </div>
                 <p className="text-sm text-gray-500">
-                    개인 API 키를 입력하세요. 저장하면 자동으로 사용 가능한 모델 목록을 불러옵니다.
+                    대체용 개인 API 키를 입력하세요. 저장하면 자동으로 사용 가능한 모델 목록을 불러옵니다.
                 </p>
                 <input
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="AI Studio API Key 입력"
+                    placeholder="AI Studio API Key 입력 (선택 사항)"
                     className="w-full p-4 rounded-xl bg-surface border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-primary"
                 />
                 <button
