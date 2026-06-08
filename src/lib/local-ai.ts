@@ -1,6 +1,6 @@
 let classifierPromise: any = null;
 
-async function getClassifier() {
+async function getClassifier(onProgress?: (progress: number) => void) {
     if (typeof window === 'undefined') return null;
     
     try {
@@ -12,7 +12,26 @@ async function getClassifier() {
         
         if (!classifierPromise) {
             console.log("Loading Swin Food-101 Model from Hugging Face CDN...");
-            classifierPromise = pipeline('image-classification', 'onnx-community/swin-finetuned-food101-ONNX');
+            classifierPromise = pipeline('image-classification', 'onnx-community/swin-finetuned-food101-ONNX', {
+                progress_callback: (info: any) => {
+                    if (info.status === 'progress') {
+                        // Calculate percentage
+                        const percentage = info.total ? Math.round((info.loaded / info.total) * 100) : 0;
+                        if (onProgress) {
+                            onProgress(percentage);
+                        }
+                    } else if (info.status === 'done') {
+                        if (onProgress) {
+                            onProgress(100);
+                        }
+                    }
+                }
+            });
+        } else {
+            // Already loaded
+            if (onProgress) {
+                onProgress(100);
+            }
         }
         return classifierPromise;
     } catch (error) {
@@ -25,14 +44,18 @@ async function getClassifier() {
  * Classify a base64 encoded image using on-device Swin Food-101 model.
  * Returns an array of predicted food class labels.
  */
-export async function classifyImageLocally(imageBase64: string): Promise<string[]> {
-    const classifier = await getClassifier();
+export async function classifyImageLocally(
+    imageBase64: string,
+    onProgress?: (progress: number) => void
+): Promise<string[]> {
+    const classifier = await getClassifier(onProgress);
     if (!classifier) {
         throw new Error("로컬 AI는 브라우저 환경에서만 동작합니다.");
     }
     
     try {
         console.log("Running on-device Swin classification...");
+        
         // Pass base64 image data directly to the pipeline
         const results = await classifier(imageBase64, {
             topk: 3 // Get top 3 predictions

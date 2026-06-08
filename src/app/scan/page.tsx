@@ -54,9 +54,11 @@ export default function ScanPage() {
         const geminiModel = localStorage.getItem("gemini_model") || "gemini-1.5-flash";
 
         try {
-            // 1. 온디바이스 로컬 AI (MobileNet)로 분석 시도
+            // 1. 온디바이스 로컬 AI (Swin)로 분석 시도
             console.log("Starting local AI classification...");
-            const predictions = await classifyImageLocally(capturedImage);
+            const predictions = await classifyImageLocally(capturedImage, (progress) => {
+                setAnalysisStatus(`로컬 AI 모델 다운로드 중... (${progress}%)`);
+            });
             console.log("Local AI predictions:", predictions);
 
             let matchedFood = null;

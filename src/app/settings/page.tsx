@@ -128,23 +128,29 @@ export default function SettingsPage() {
     const handleCheckUpdate = async () => {
         setUpdateChecking(true);
         try {
-            if ('serviceWorker' in navigator) {
-                const registration = await navigator.serviceWorker.getRegistration();
-                if (registration) {
-                    await registration.update();
-                    setMessage("업데이트를 확인했습니다. 페이지를 새로고침합니다...");
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    setMessage("Service Worker가 등록되지 않았습니다.");
-                }
-            } else {
-                setMessage("이 브라우저는 Service Worker를 지원하지 않습니다.");
+            // 1. Delete all cache storage to clear stale HTML/JS bundles
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames.map((name) => caches.delete(name))
+                );
             }
+            
+            // 2. Unregister all service workers
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+            
+            setMessage("앱 캐시가 초기화되었습니다. 최신 버전을 설치하고 새로고침합니다...");
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } catch (error) {
             console.error("Update check error:", error);
-            setMessage("업데이트 확인에 실패했습니다.");
+            setMessage("업데이트에 실패했습니다.");
         } finally {
             setUpdateChecking(false);
             setTimeout(() => setMessage(""), 3000);
